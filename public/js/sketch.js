@@ -40,7 +40,7 @@ function windowResized() {
 
 // --------------------------------------------------------
 function draw() {
-  background(bpm, 20);
+  background(bpm-20, 30);
 
   let hVal = map(pulseVal, 0, 1000, 50, 200);
 
@@ -65,6 +65,7 @@ function draw() {
 
 function heart(x, y, size) {
   push();
+  noStroke();
   fill(250, 50, 115);
   translate(x, y);
   rotate(PI/4);
@@ -79,20 +80,26 @@ function high(bpm) {
   stroke(255);
   lines.push([random(-height, width-50), height]);
   for (var i = 0; i < lines.length; i++) {
-    line(lines[i][0]++, lines[i][1]--, lines[i][0]-150, lines[i][1]+150);
+    let diff = random(3);
+    line(lines[i][0], lines[i][1], lines[i][0]-150, lines[i][1]+150);
+    lines[i][0] += diff;
+    lines[i][1] -= diff;
   }
   // count++;
   noStroke();
 }
 
 function low(bpm) {
+  let c1 = color(127, 109, 168);
+  let c2 = color(42, 44, 114);
 
+  setGradient(0, 0, width, height, c1, c2, "Y_AXIS");
 }
 
 function setGradient(x, y, w, h, c1, c2, axis) {
   noFill();
 
-  if (axis === Y_AXIS) {
+  if (axis === "Y_AXIS") {
     // Top to bottom gradient
     for (let i = y; i <= y + h; i++) {
       let inter = map(i, y, y + h, 0, 1);
@@ -100,7 +107,7 @@ function setGradient(x, y, w, h, c1, c2, axis) {
       stroke(c);
       line(x, i, x + w, i);
     }
-  } else if (axis === X_AXIS) {
+  } else if (axis === "X_AXIS") {
     // Left to right gradient
     for (let i = x; i <= x + w; i++) {
       let inter = map(i, x, x + w, 0, 1);
