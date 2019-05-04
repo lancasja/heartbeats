@@ -9,6 +9,11 @@ const SpotifyWebApi = require('spotify-web-api-node');
 const clientId = '614f59b5380042b1b5fa3c4c275ba035';
 const clientSecret = '6792d680cb8343caa6786bd5e4cee1ea';
 
+const SerialPort = require('serialport');
+const Readline   = require('@serialport/parser-readline');
+const sPort      = new SerialPort('/dev/cu.usbmodem143101', { baudRate: 115200 });
+const parser     = sPort.pipe(new Readline({ delimiter: '\n' }));
+
 // Create the api object with the credentials
 const spotifyApi = new SpotifyWebApi({
   clientId: clientId,
@@ -43,6 +48,17 @@ spotifyApi.clientCredentialsGrant().then(
         console.log('Something went wrong when retrieving an access token', err);
     }
 );
+
+sPort.on("open", () => {
+  console.log('Serial port open.');
+});
+
+// --------------------------------------------------------
+// Our parser streams the incoming serial data
+parser.on('data', function(data) {
+  console.log(data);
+  io.emit('data', { pulseData : data });
+});
 
 app.use(express.static(__dirname + '/public'))
    .use(cors())
