@@ -2,46 +2,46 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const app = express();
+const server  = require('http').createServer(app);
+const io = require('socket.io')(server);
+const PORT = 8888;
 const SpotifyWebApi = require('spotify-web-api-node');
-
 const clientId = '614f59b5380042b1b5fa3c4c275ba035';
 const clientSecret = '6792d680cb8343caa6786bd5e4cee1ea';
 
 // Create the api object with the credentials
-var spotifyApi = new SpotifyWebApi({
+const spotifyApi = new SpotifyWebApi({
   clientId: clientId,
   clientSecret: clientSecret
 });
 
+io.on('connection', function (socket) {
+    console.log("New socket client connection: ", socket.id);
+});
 
-
-// Retrieve an access token.
 spotifyApi.clientCredentialsGrant().then(
-  function(data) {
-    console.log('The access token expires in ' + data.body['expires_in']);
-    console.log('The access token is ' + data.body['access_token']);
+    function(data) {
+        console.log('The access token expires in ' + data.body['expires_in']);
+        console.log('The access token is ' + data.body['access_token']);
 
-    // Save the access token so that it's used in future calls
-    spotifyApi.setAccessToken(data.body['access_token']);
+        // Save the access token so that it's used in future calls
+        spotifyApi.setAccessToken(data.body['access_token']);
 
-    /* ----------------------
-     * MAKE API REQUESTS HERE
-     */
-    // Get Elvis' albums
-    spotifyApi.getArtistAlbums('43ZHCT0cAZBISjO8DG9PnE')
-        .then(
-            (data) => {
-                console.log('Artist albums', data.body);
-            },
-            (err) => {
+        /* ----------------------
+        * MAKE API REQUESTS HERE
+        */
+        spotifyApi.searchTracks('Love')
+            .then(function(data) {
+                console.log('Search by "Love"', data.body);
+                io.emit('spotifyTracks', data.body);
+            }, function(err) {
                 console.error(err);
-            }
-        );
-    /* --------------------- */
-  },
-  function(err) {
-    console.log('Something went wrong when retrieving an access token', err);
-  }
+            });
+        /* --------------------- */
+    },
+    function(err) {
+        console.log('Something went wrong when retrieving an access token', err);
+    }
 );
 
 app.use(express.static(__dirname + '/public'))
@@ -52,4 +52,6 @@ app.get('/', (req, res) => {
     res.sendFile('/index.html');
 });
 
-app.listen(8888);
+server.listen(PORT, () => {
+    console.log('Listening on PORT ' + PORT);
+});
