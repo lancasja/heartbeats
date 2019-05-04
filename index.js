@@ -1,40 +1,48 @@
-/**
- * This is an example of a basic node.js script that performs
- * the Authorization Code oAuth2 flow to authenticate against
- * the Spotify Accounts.
- *
- * For more information, read
- * https://developer.spotify.com/web-api/authorization-guide/#authorization_code_flow
- */
+const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const app = express();
+const SpotifyWebApi = require('spotify-web-api-node');
 
-var express = require('express'); // Express web server framework
-var request = require('request'); // "Request" library
-var cors = require('cors');
-var querystring = require('querystring');
-var cookieParser = require('cookie-parser');
+const clientId = '614f59b5380042b1b5fa3c4c275ba035';
+const clientSecret = '6792d680cb8343caa6786bd5e4cee1ea';
 
-var client_id = '614f59b5380042b1b5fa3c4c275ba035'; // Your client id
-var client_secret = '6792d680cb8343caa6786bd5e4cee1ea'; // Your secret
-var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
+// Create the api object with the credentials
+var spotifyApi = new SpotifyWebApi({
+  clientId: clientId,
+  clientSecret: clientSecret
+});
 
-/**
- * Generates a random string containing numbers and letters
- * @param  {number} length The length of the string
- * @return {string} The generated string
- */
-var generateRandomString = function(length) {
-  var text = '';
-  var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-  for (var i = 0; i < length; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+// Retrieve an access token.
+spotifyApi.clientCredentialsGrant().then(
+  function(data) {
+    console.log('The access token expires in ' + data.body['expires_in']);
+    console.log('The access token is ' + data.body['access_token']);
+
+    // Save the access token so that it's used in future calls
+    spotifyApi.setAccessToken(data.body['access_token']);
+
+    /* ----------------------
+     * MAKE API REQUESTS HERE
+     */
+    // Get Elvis' albums
+    spotifyApi.getArtistAlbums('43ZHCT0cAZBISjO8DG9PnE')
+        .then(
+            (data) => {
+                console.log('Artist albums', data.body);
+            },
+            (err) => {
+                console.error(err);
+            }
+        );
+    /* --------------------- */
+  },
+  function(err) {
+    console.log('Something went wrong when retrieving an access token', err);
   }
-  return text;
-};
-
-var stateKey = 'spotify_auth_state';
-
-var app = express();
+);
 
 app.use(express.static(__dirname + '/public'))
    .use(cors())
@@ -44,5 +52,4 @@ app.get('/', (req, res) => {
     res.sendFile('/index.html');
 });
 
-console.log('Listening on 8888');
 app.listen(8888);
