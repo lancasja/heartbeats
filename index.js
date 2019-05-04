@@ -20,6 +20,33 @@ app.use(express.static(__dirname + '/public'))
 
 io.on('connection', function (socket) {
     console.log("New socket client connection: ", socket.id);
+    spotifyApi.clientCredentialsGrant().then(
+        function(data) {
+            console.log('The access token expires in ' + data.body['expires_in']);
+            console.log('The access token is ' + data.body['access_token']);
+    
+            // Save the access token so that it's used in future calls
+            spotifyApi.setAccessToken(data.body['access_token']);
+    
+            /* ----------------------
+            * MAKE API REQUESTS HERE
+            */
+            const getRandomTerm = (items) => {
+                return items[Math.floor(Math.random()*items.length)];
+            };
+            spotifyApi.searchTracks(getRandomTerm(['Love', 'Heart', 'Heartbeat', 'Rage', 'Joy']))
+                .then(function(data) {
+                    console.log('Search by "Love"', data.body);
+                    io.emit('spotifyTracks', data.body.tracks.items);
+                }, function(err) {
+                    console.error(err);
+                });
+            /* --------------------- */
+        },
+        function(err) {
+            console.log('Something went wrong when retrieving an access token', err);
+        }
+    );
 });
 
 sPort.on("open", () => {
@@ -31,31 +58,6 @@ const spotifyApi = new SpotifyWebApi({
   clientId: clientId,
   clientSecret: clientSecret
 });
-
-spotifyApi.clientCredentialsGrant().then(
-    function(data) {
-        console.log('The access token expires in ' + data.body['expires_in']);
-        console.log('The access token is ' + data.body['access_token']);
-
-        // Save the access token so that it's used in future calls
-        spotifyApi.setAccessToken(data.body['access_token']);
-
-        /* ----------------------
-        * MAKE API REQUESTS HERE
-        */
-        spotifyApi.searchTracks('Love')
-            .then(function(data) {
-                console.log('Search by "Love"', data.body);
-                io.emit('spotifyTracks', data.body);
-            }, function(err) {
-                console.error(err);
-            });
-        /* --------------------- */
-    },
-    function(err) {
-        console.log('Something went wrong when retrieving an access token', err);
-    }
-);
 
 // --------------------------------------------------------
 // Our parser streams the incoming serial data
