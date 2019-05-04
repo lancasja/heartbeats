@@ -14,14 +14,22 @@ const Readline   = require('@serialport/parser-readline');
 const sPort      = new SerialPort('/dev/cu.usbmodem143101', { baudRate: 115200 });
 const parser     = sPort.pipe(new Readline({ delimiter: '\n' }));
 
+app.use(express.static(__dirname + '/public'))
+   .use(cors())
+   .use(cookieParser());
+
+io.on('connection', function (socket) {
+    console.log("New socket client connection: ", socket.id);
+});
+
+sPort.on("open", () => {
+    console.log('Serial port open.');
+});
+
 // Create the api object with the credentials
 const spotifyApi = new SpotifyWebApi({
   clientId: clientId,
   clientSecret: clientSecret
-});
-
-io.on('connection', function (socket) {
-    console.log("New socket client connection: ", socket.id);
 });
 
 spotifyApi.clientCredentialsGrant().then(
@@ -49,20 +57,12 @@ spotifyApi.clientCredentialsGrant().then(
     }
 );
 
-sPort.on("open", () => {
-  console.log('Serial port open.');
-});
-
 // --------------------------------------------------------
 // Our parser streams the incoming serial data
 parser.on('data', function(data) {
   console.log(data);
   io.emit('data', { pulseData : data });
 });
-
-app.use(express.static(__dirname + '/public'))
-   .use(cors())
-   .use(cookieParser());
 
 app.get('/', (req, res) => {
     res.sendFile('/index.html');
